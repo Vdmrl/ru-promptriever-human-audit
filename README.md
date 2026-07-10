@@ -7,8 +7,9 @@ Assuming Docker Desktop and Git are installed and running, just follow these ste
 1. **Pull the latest updates and start the database:**
    ```powershell
    git pull
-   docker compose up -d
+   docker compose up -d --build
    ```
+   The setup container automatically creates the users, dataset, and annotation schema on the first launch.
 2. **Open the interface:**
    Go to: [http://localhost:6900](http://localhost:6900) in your browser.
    * Login: `daria` (or `vladimir`)
@@ -52,15 +53,10 @@ docker compose up -d --build
 ```
 Wait approximately 1 minute for all containers to initialize.
 
-3. Set up the dataset and users (only required on the first launch):
-```bash
-docker compose run --rm tools python scripts/setup_argilla.py
-```
-
-4. Open the Argilla login page in your browser:
+3. Open the Argilla login page in your browser:
 [http://localhost:6900](http://localhost:6900)
 
-5. Log in using your assigned annotator account:
+4. Log in using your assigned annotator account:
 - **Username**: `daria` or `vladimir`
 - **Password**: `password` (default password)
 
@@ -103,7 +99,7 @@ docker compose start
 ```
 - Once all records are annotated, export the results:
 ```bash
-docker compose run --rm tools python scripts/export_annotations.py --output-dir data/exports
+docker compose run --rm setup python scripts/export_annotations.py --output-dir data/exports
 ```
 This script saves the results to:
 `data/exports/annotations.jsonl`
@@ -123,11 +119,23 @@ This generates:
 - `data/private_manifest.jsonl`: Ground-truth labels and document roles (**do not share this file with annotators**).
 - `data/sample_metadata.json`: Metadata tracking of dataset hashes.
 
+### Calculating the audit metrics
+
+After both independent annotation exports are available in `data/exports/annotations.jsonl`, run:
+```bash
+docker compose run --rm setup python scripts/calculate_kappa.py \
+  --input /workspace/data/exports/annotations.jsonl \
+  --manifest /workspace/data/private_manifest.jsonl \
+  --output /workspace/data/exports/audit_metrics.json
+```
+
+The report contains query and passage acceptability, positive/negative and strict-record validity, split-wise results, negative-type diagnostics, exact agreement, Cohen's kappa, and record-cluster bootstrap 95% intervals.
+
 ---
 
 ## Project Structure
 
-- `docker-compose.yml`: Launches Argilla Server, PostgreSQL, Elasticsearch, Redis, and a tools container.
+- `docker-compose.yml`: Launches Argilla Server, PostgreSQL, Elasticsearch, Redis, and the setup/export container.
 - `scripts/setup_argilla.py`: Registers workspaces, configures schema, creates annotator users, and uploads the dataset.
 - `scripts/export_annotations.py`: Pulls completed annotator responses and saves them in CSV/JSONL formats.
 - `data/public_items.jsonl`: Pre-randomized and blinded quality evaluation dataset.
