@@ -1,155 +1,113 @@
-# Argilla-аудит ru-Promptriever
+# Argilla Human Audit for ru-Promptriever
 
-Эта папка содержит отдельный вариант интерфейса для human audit из 'paper/REBUTTAL_MASTER_PLAN.md'. Сам интерфейс предоставляет Argilla, а репозиторий содержит Docker-конфигурацию, скрипты загрузки/выгрузки и публичную ослеплённую выборку.
+This repository contains the Docker configuration, setup scripts, and evaluation data for performing the human annotation (audit) of the ru-Promptriever dataset. The interface is powered by Argilla.
 
-## Инструкция для Даши
+---
 
-### Что нужно установить
+## 1. For Annotators
 
-Нужен только:
+### Prerequisites
 
-1. Docker Desktop: https://www.docker.com/products/docker-desktop/
-2. Git: https://git-scm.com/downloads
+You only need:
+1. **Docker Desktop** (must be installed and running)
+2. **Git**
 
-После установки Docker Desktop должен быть запущен. Проверка в PowerShell:
-
-~~~powershell
+To verify Docker is installed and running, run in your terminal:
+```bash
 docker --version
 docker compose version
-~~~
+```
 
-### Первый запуск
+### Quick Start
 
-Склонируй репозиторий и перейди в эту папку:
+1. Clone the repository and navigate into the folder:
+```bash
+git clone https://github.com/Vdmrl/ru-promptriever-human-audit
+cd ru-promptriever-human-audit
+```
 
-~~~powershell
-git clone <ССЫЛКА_НА_РЕПОЗИТОРИЙ>
-cd ru-promptriever\human_annotation\argilla
-~~~
-
-По умолчанию для всех пользователей (администратора `argilla`, разметчиков `daria` и `vladimir`) установлен пароль **`password`**. 
-
-При желании изменить пароли, создайте файл `.env` рядом с `docker-compose.yml` и задайте свои значения:
-
-~~~dotenv
-ARGILLA_OWNER_PASSWORD=new-owner-password
-ARGILLA_DARIA_PASSWORD=new-daria-password
-ARGILLA_VLADIMIR_PASSWORD=new-vladimir-password
-~~~
-
-Затем запустите Argilla:
-
-~~~powershell
+2. Start the Argilla server:
+```bash
 docker compose up -d --build
-~~~
+```
+Wait approximately 1 minute for all containers to initialize.
 
-Подождите примерно минуту и откройте в браузере:
-
-http://localhost:6900
-
-Сначала выполните настройку датасета:
-
-~~~powershell
+3. Set up the dataset and users (only required on the first launch):
+```bash
 docker compose run --rm tools python scripts/setup_argilla.py
-~~~
+```
 
-После этого войдите в интерфейс под своим пользователем:
+4. Open the Argilla login page in your browser:
+[http://localhost:6900](http://localhost:6900)
 
-- username: `daria` или `vladimir`
-- password: `password` (или значение из `.env`, если вы его переопределили)
+5. Log in using your assigned annotator account:
+- **Username**: `daria` or `vladimir`
+- **Password**: `password` (default password)
 
-### Что именно размечать
+> [!NOTE]
+> All default passwords (for the administrator and the annotators) are set to `password` by default to simplify local runs. If you want to customize them, create a `.env` file next to `docker-compose.yml` prior to starting the containers:
+> ```dotenv
+> ARGILLA_OWNER_PASSWORD=new-owner-password
+> ARGILLA_DARIA_PASSWORD=new-daria-password
+> ARGILLA_VLADIMIR_PASSWORD=new-vladimir-password
+> ```
 
-В каждом примере будут показаны:
+### Annotation Guidelines
 
-- query из итоговой записи датасета;
-- положительный passage из итоговой записи;
-- query для финальной пары;
-- instruction;
-- четыре документа в случайном порядке.
+For each query record, you will be presented with:
+1. **Query**: The final query string.
+2. **Positive passage**: The expected positive document.
+3. **Instruction**: The search instruction constraint.
+4. **Four documents**: Shown in randomized order.
 
-Для каждого примера нужно ответить на шесть обязательных вопросов.
+For each example, answer the following mandatory questions:
+- **Query Acceptable**: Is the query written in understandable and acceptable Russian? (Yes / No)
+- **Passage Acceptable**: Is the positive passage written in understandable and coherent Russian? (Yes / No)
+- **Document Roles**: For each of the 4 documents, choose exactly one option:
+  - `1`: The document does not answer the query.
+  - `2`: The document answers the query but violates the instruction.
+  - `3`: The document answers the query and satisfies the instruction.
 
-1. Query написан на понятном и приемлемом русском языке — 'Да'/'Нет'.
-2. Положительный passage написан на понятном, связном русском языке — 'Да'/'Нет'.
-3. Для каждого из четырёх документов выбрать ровно один вариант:
-   - '1' — документ не отвечает на query;
-   - '2' — документ отвечает на query, но нарушает instruction;
-   - '3' — документ отвечает на query и удовлетворяет instruction.
+*Note: The documents are blinded and shuffled. Do not try to guess which document was originally positive or negative.*
 
-Отдельно определять positive и negatives не нужно: порядок документов специально перемешан. Не пытайся угадать исходные роли документов и не ищи правильный ответ по порядку.
+### Saving & Exporting Results
 
-Для бинарных вопросов ставь 'Да', если текст понятен и пригоден для использования, даже если есть небольшие стилистические шероховатости. Ставь 'Нет', если есть явная грамматическая, лексическая, языковая или логическая проблема, которая мешает понять текст.
-
-Варианта 'неясно' нет. Если пример кажется спорным, выбери наиболее обоснованный вариант. Такие случаи будут учитываться через расхождения между двумя разметчиками.
-
-Не нужно:
-
-- оценивать исходный машинный перевод;
-- проверять сохранение смысла относительно исходного документа;
-- оценивать instruction отдельным вопросом;
-- ставить оценки от 1 до 5;
-- писать комментарии или объяснения.
-
-Если не закончишь пример за один раз, сначала нажми в Argilla кнопку `Save as Draft`, а затем закрой браузер или выполни 'docker compose stop'. После сохранения draft ответы не пропадут. Для продолжения снова выполни:
-
-~~~powershell
+- If you cannot finish all examples in one session, click **Save as Draft** in the UI. Your progress is saved in persistent Docker volumes and will not be lost.
+- To pause the server, run:
+```bash
+docker compose stop
+```
+- To resume the server, run:
+```bash
 docker compose start
-~~~
-
-и открой http://localhost:6900. В очереди останутся незавершённые записи.
-
-### Как передать результаты
-
-Когда закончишь всю разметку, выполни:
-
-~~~powershell
+```
+- Once all records are annotated, export the results:
+```bash
 docker compose run --rm tools python scripts/export_annotations.py --output-dir data/exports
-~~~
+```
+This script saves the results to:
+`data/exports/annotations.jsonl`
 
-Появится файл:
+Please send `annotations.jsonl` to the project owner. Do not share your `.env` or Docker volumes.
 
-~~~text
-data/exports/annotations.jsonl
-~~~
+---
 
-Пришли этот файл Владимиру. Он содержит твои ответы и идентификаторы примеров, но не содержит правильных ролей документов.
+## 2. For Project Owners: Sample Preparation
 
-Не присылай Docker volumes и не добавляй в GitHub '.env': для подсчёта метрик нужен только 'annotations.jsonl'.
+The evaluation sample is pre-prepared from the final parquet dataset. If you need to regenerate the evaluation split, use the preparation script:
+```bash
+python scripts/prepare_from_final_dataset.py --dataset-dir <path_to_final_parquet_dataset> --out-dir data
+```
+This generates:
+- `data/public_items.jsonl`: The public blinded split.
+- `data/private_manifest.jsonl`: Ground-truth labels and document roles (**do not share this file with annotators**).
+- `data/sample_metadata.json`: Metadata tracking of dataset hashes.
 
-## Инструкция для Владимира: подготовка выборки
+---
 
-Выборка уже должна быть подготовлена Владимиром из итогового parquet-датасета: 60 train и 40 synthetic-test строк, без repeated queries и ровно с тремя `new_negatives` в каждой строке. Даше не нужно запускать этот шаг.
+## Project Structure
 
-Пример:
-
-~~~powershell
-python human_annotation/argilla/scripts/prepare_from_final_dataset.py --dataset-dir data_preprocessing/data/output_final_dataset/data --out-dir human_annotation/argilla/data
-~~~
-
-Для передачи Даше нужен только:
-
-~~~text
-human_annotation/
-  argilla/
-    docker-compose.yml
-    Dockerfile.tools
-    requirements.txt
-    README.md
-    scripts/setup_argilla.py
-    scripts/export_annotations.py
-    data/public_items.jsonl
-    data/sample_metadata.json
-~~~
-
-Файл 'data/private_manifest.jsonl' нельзя передавать разметчику: в нём хранятся роли документов и split. Он нужен только для последующего анализа.
-
-## Что делает код
-
-- 'scripts/setup_argilla.py' создаёт пользователей, датасет, поля, вопросы и загружает records;
-- 'scripts/export_annotations.py' выгружает все ответы с Argilla в JSONL и CSV;
-- 'scripts/prepare_from_final_dataset.py' создаёт выборку непосредственно из итоговых train/test parquet и приватное сопоставление ролей;
-- 'scripts/prepare_argilla_sample.py' оставлен для случая, когда доступны исходные generation records;
-- 'docker-compose.yml' запускает Argilla, PostgreSQL, Elasticsearch, Redis и контейнер с Python SDK.
-
-Argilla хранит конфигурацию и ответы в persistent Docker volumes. Передача результатов выполняется через экспорт, а не через копирование volumes.
+- `docker-compose.yml`: Launches Argilla Server, PostgreSQL, Elasticsearch, Redis, and a tools container.
+- `scripts/setup_argilla.py`: Registers workspaces, configures schema, creates annotator users, and uploads the dataset.
+- `scripts/export_annotations.py`: Pulls completed annotator responses and saves them in CSV/JSONL formats.
+- `data/public_items.jsonl`: Pre-randomized and blinded quality evaluation dataset.
