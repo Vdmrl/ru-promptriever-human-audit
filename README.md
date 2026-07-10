@@ -1,6 +1,26 @@
 # Argilla Human Audit for ru-Promptriever
 
-This repository contains the Docker configuration, setup scripts, and evaluation data for performing the human annotation (audit) of the ru-Promptriever dataset. The interface is powered by Argilla.
+## 🚀 Quick Start for Annotators
+
+Assuming Docker Desktop and Git are installed and running, just follow these steps:
+
+1. **Pull the latest updates and start the database:**
+   ```powershell
+   git pull
+   docker compose up -d
+   ```
+2. **Open the interface:**
+   Go to: [http://localhost:6900](http://localhost:6900) in your browser.
+   * Login: `daria` (or `vladimir`)
+   * Password: `password`
+3. **Annotate all 64 records** (click Submit for each).
+4. **Export the results:**
+   When you are done (64/64), run this in your terminal:
+   ```powershell
+   docker compose run --rm setup python scripts/export_annotations.py
+   ```
+5. **Save the file:**
+   The script will generate a file at `data/exports/annotations.jsonl`.
 
 ---
 

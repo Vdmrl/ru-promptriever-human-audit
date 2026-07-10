@@ -77,11 +77,12 @@ services:
     networks:
       - argilla
 
-  tools:
+  setup:
     build:
       context: .
       dockerfile: Dockerfile.tools
     working_dir: /workspace
+    command: ["python", "scripts/setup_argilla.py"]
     environment:
       ARGILLA_API_URL: http://argilla:6900
       ARGILLA_API_KEY: ${ARGILLA_API_KEY:-argilla.apikey}
