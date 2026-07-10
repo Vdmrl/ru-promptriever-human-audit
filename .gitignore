@@ -1,0 +1,7 @@
+.env
+data/private_manifest.jsonl
+data/argilla_dataset.json
+data/exports/
+data/*.log
+!data/public_items.jsonl
+!data/sample_metadata.json

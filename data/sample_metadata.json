@@ -1,0 +1,54 @@
+{
+  "schema_version": 3,
+  "seed": 20260710,
+  "quality_requested": {
+    "train": 60,
+    "synthetic_test": 40
+  },
+  "quality_selected": {
+    "train": 60,
+    "synthetic_test": 40
+  },
+  "dataset_hash": "fe8219378b7e02bbf8a37e93c6773ade03619ddaf04fcf48cb244a12f0858cd6",
+  "source": "data_preprocessing/data/output_final_dataset/data",
+  "source_files": [
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00000-of-00008.parquet",
+      "size": 1665235916
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00001-of-00008.parquet",
+      "size": 1683323001
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00002-of-00008.parquet",
+      "size": 1717812467
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00003-of-00008.parquet",
+      "size": 1657872098
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00004-of-00008.parquet",
+      "size": 1657115712
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00005-of-00008.parquet",
+      "size": 1683890825
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00006-of-00008.parquet",
+      "size": 1643423905
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00007-of-00008.parquet",
+      "size": 1399904985
+    },
+    {
+      "path": "data_preprocessing\\data\\output_final_dataset\\data\\test-00000-of-00001.parquet",
+      "size": 18696394
+    }
+  ],
+  "module_a_note": "Final dataset does not preserve original-vs-rewritten only_query status.",
+  "warning": "Keep private_manifest.jsonl out of the annotator package."
+}

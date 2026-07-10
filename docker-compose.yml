@@ -1,0 +1,107 @@
+x-common-variables: &common-variables
+  ARGILLA_HOME_PATH: /var/lib/argilla
+  ARGILLA_ELASTICSEARCH: http://elasticsearch:9200
+  ARGILLA_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/argilla
+  ARGILLA_REDIS_URL: redis://redis:6379/0
+  USERNAME: ${ARGILLA_OWNER_USERNAME:-argilla}
+  PASSWORD: ${ARGILLA_OWNER_PASSWORD:-password}
+  API_KEY: ${ARGILLA_API_KEY:-argilla.apikey}
+  WORKSPACE: ${ARGILLA_WORKSPACE:-default}
+  HF_HUB_DISABLE_TELEMETRY: "1"
+
+services:
+  argilla:
+    image: argilla/argilla-server:latest
+    restart: unless-stopped
+    ports:
+      - "6900:6900"
+    environment:
+      <<: *common-variables
+    networks:
+      - argilla
+    volumes:
+      - argilladata:/var/lib/argilla
+    depends_on:
+      - postgres
+      - elasticsearch
+      - redis
+
+  worker:
+    image: argilla/argilla-server:latest
+    restart: unless-stopped
+    environment:
+      <<: *common-variables
+      BACKGROUND_NUM_WORKERS: 2
+    command: ["python", "-m", "argilla_server", "worker", "--num-workers", "2"]
+    networks:
+      - argilla
+    depends_on:
+      - postgres
+      - elasticsearch
+      - redis
+
+  postgres:
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: argilla
+    networks:
+      - argilla
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    restart: unless-stopped
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - node.name=elasticsearch
+      - cluster.name=es-argilla-local
+      - discovery.type=single-node
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - argilla
+    volumes:
+      - elasticdata:/usr/share/elasticsearch/data
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - argilla
+
+  tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    working_dir: /workspace
+    environment:
+      ARGILLA_API_URL: http://argilla:6900
+      ARGILLA_API_KEY: ${ARGILLA_API_KEY:-argilla.apikey}
+      ARGILLA_WORKSPACE: ${ARGILLA_WORKSPACE:-default}
+      ARGILLA_DATASET: ${ARGILLA_DATASET:-ru-promptriever-human-audit}
+      ARGILLA_DARIA_PASSWORD: ${ARGILLA_DARIA_PASSWORD:-password}
+      ARGILLA_VLADIMIR_PASSWORD: ${ARGILLA_VLADIMIR_PASSWORD:-password}
+    volumes:
+      - ./scripts:/workspace/scripts:ro
+      - ./data:/workspace/data
+    networks:
+      - argilla
+    depends_on:
+      - argilla
+
+networks:
+  argilla:
+    driver: bridge
+
+volumes:
+  argilladata:
+  elasticdata:
+  postgresdata:
