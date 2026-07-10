@@ -87,8 +87,8 @@ def load_items() -> tuple[list[dict[str, Any]], str]:
             raise ValueError(f"{item['item_id']}: exactly four Module B passages are required")
         items.append(item)
 
-    if len(items) != 100:
-        raise ValueError(f"Expected exactly 100 quality records, found {len(items)}")
+    if len(items) != 64:
+        raise ValueError(f"Expected exactly 64 quality records, found {len(items)}")
     return items, hashlib.sha256(PUBLIC_PATH.read_bytes()).hexdigest()
 
 

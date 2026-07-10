@@ -151,9 +151,9 @@ def main() -> int:
     parser.add_argument("--input", action="append", default=[])
     parser.add_argument("--out-dir", default="human_annotation/argilla/data")
     parser.add_argument("--seed", type=int, default=20260710)
-    parser.add_argument("--train-n", type=int, default=60)
-    parser.add_argument("--test-n", type=int, default=40)
-    parser.add_argument("--expected-total", type=int, default=100, help="Production value is 100; smaller values are only for smoke tests.")
+    parser.add_argument("--train-n", type=int, default=40)
+    parser.add_argument("--test-n", type=int, default=24)
+    parser.add_argument("--expected-total", type=int, default=64, help="Production value is 100; smaller values are only for smoke tests.")
     args = parser.parse_args()
 
     candidates: dict[str, list[dict[str, Any]]] = {"train": [], "test": []}

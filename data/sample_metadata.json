@@ -2,14 +2,14 @@
   "schema_version": 3,
   "seed": 20260710,
   "quality_requested": {
-    "train": 60,
-    "synthetic_test": 40
+    "train": 40,
+    "synthetic_test": 24
   },
   "quality_selected": {
-    "train": 60,
-    "synthetic_test": 40
+    "train": 40,
+    "synthetic_test": 24
   },
-  "dataset_hash": "fe8219378b7e02bbf8a37e93c6773ade03619ddaf04fcf48cb244a12f0858cd6",
+  "dataset_hash": "19ccc1af694c888203d65dadf5b95335af25ed1fee13f30bd11c5e67bf89984c",
   "source": "data_preprocessing/data/output_final_dataset/data",
   "source_files": [
     {

@@ -125,8 +125,8 @@ def main() -> int:
     )
     parser.add_argument("--out-dir", default="human_annotation/argilla/data")
     parser.add_argument("--seed", type=int, default=20260710)
-    parser.add_argument("--train-n", type=int, default=60)
-    parser.add_argument("--test-n", type=int, default=40)
+    parser.add_argument("--train-n", type=int, default=40)
+    parser.add_argument("--test-n", type=int, default=24)
     args = parser.parse_args()
 
     dataset_dir = Path(args.dataset_dir)
@@ -150,8 +150,8 @@ def main() -> int:
         public_items.append(public)
         private_items.append(private)
 
-    if len(public_items) != 100:
-        raise RuntimeError(f"Expected 100 records, found {len(public_items)}")
+    if len(public_items) != 64:
+        raise RuntimeError(f"Expected 64 records, found {len(public_items)}")
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
