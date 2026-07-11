@@ -18,7 +18,7 @@ API_URL = os.getenv("ARGILLA_API_URL", "http://localhost:6900")
 API_KEY = os.getenv("ARGILLA_API_KEY", "argilla.apikey")
 WORKSPACE = os.getenv("ARGILLA_WORKSPACE", "default")
 DATASET_NAME = os.getenv("ARGILLA_DATASET", "ru-promptriever-human-audit")
-MAX_DOCUMENTS = 5
+MAX_DOCUMENTS = 4
 
 FORBIDDEN_PUBLIC_KEYS = {
     "gold",
