@@ -11,13 +11,10 @@ from typing import Any
 
 import argilla as rg
 
-QUESTION_NAMES = [
-    "query_acceptable",
-    "passage_acceptable",
-    "document_1_role",
-    "document_2_role",
-    "document_3_role",
-    "document_4_role",
+BINARY_QUESTION_NAMES = ["query_acceptable", "passage_acceptable"]
+MAX_DOCUMENTS = 5
+QUESTION_NAMES = BINARY_QUESTION_NAMES + [
+    f"document_{index}_role" for index in range(1, MAX_DOCUMENTS + 1)
 ]
 
 
@@ -35,6 +32,11 @@ def response_parts(response: Any) -> tuple[str, str, Any]:
 
 
 def response_rows(record: Any) -> list[dict[str, Any]]:
+    fields = getattr(record, "fields", {}) or {}
+    document_count = sum(
+        bool(str(fields.get(f"document_{index}", "") or "").strip())
+        for index in range(1, MAX_DOCUMENTS + 1)
+    )
     responses = getattr(record, "responses", {}) or {}
     grouped: dict[str, list[Any]] = {}
     if isinstance(responses, dict):
@@ -61,6 +63,7 @@ def response_rows(record: Any) -> list[dict[str, Any]]:
                     "user_id": user_id,
                     "responses": {},
                     "statuses": {},
+                    "document_count": document_count,
                 },
             )
             row["responses"][question] = value
@@ -92,9 +95,14 @@ def main() -> int:
     for record in dataset.records(with_responses=True):
         for row in response_rows(record):
             row["username"] = users.get(row["user_id"], row["user_id"])
-            row["completed"] = all(
-                question in row["responses"] for question in QUESTION_NAMES
-            )
+            required_questions = [
+                *BINARY_QUESTION_NAMES,
+                *[
+                    f"document_{index}_role"
+                    for index in range(1, row["document_count"] + 1)
+                ],
+            ]
+            row["completed"] = all(question in row["responses"] for question in required_questions)
             rows.append(row)
 
     output_dir = Path(args.output_dir)
@@ -113,7 +121,15 @@ def main() -> int:
             handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
     csv_path = output_dir / "annotations.csv"
-    columns = ["record_id", "username", "user_id", "completed", "dataset_hash", *QUESTION_NAMES]
+    columns = [
+        "record_id",
+        "username",
+        "user_id",
+        "completed",
+        "document_count",
+        "dataset_hash",
+        *QUESTION_NAMES,
+    ]
     with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns)
         writer.writeheader()
@@ -123,6 +139,7 @@ def main() -> int:
                 "username": row["username"],
                 "user_id": row["user_id"],
                 "completed": row["completed"],
+                "document_count": row["document_count"],
                 "dataset_hash": row["dataset_hash"],
                 **row["responses"],
             }
@@ -134,4 +151,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

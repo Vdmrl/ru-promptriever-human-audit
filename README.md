@@ -74,12 +74,12 @@ For each query record, you will be presented with:
 1. **Query**: The final query string.
 2. **Positive passage**: The expected positive document.
 3. **Instruction**: The search instruction constraint.
-4. **Four documents**: Shown in randomized order.
+4. **Documents**: Between one and five documents, shown in randomized order. The number depends on how many filtered negatives remain in the final dataset row.
 
 For each example, answer the following mandatory questions:
 - **Query Acceptable**: Is the query written in understandable and acceptable Russian? (Yes / No)
 - **Passage Acceptable**: Is the positive passage written in understandable and coherent Russian? (Yes / No)
-- **Document Roles**: For each of the 4 documents, choose exactly one option:
+- **Document Roles**: For each displayed document, choose exactly one option:
   - `1`: The document does not answer the query.
   - `2`: The document answers the query but violates the instruction.
   - `3`: The document answers the query and satisfies the instruction.
@@ -118,6 +118,10 @@ This generates:
 - `data/public_items.jsonl`: The public blinded split.
 - `data/private_manifest.jsonl`: Ground-truth labels and document roles (**do not share this file with annotators**).
 - `data/sample_metadata.json`: Metadata tracking of dataset hashes.
+
+The frozen 64-record sample is random within the train and synthetic-test splits and does not condition on the number of retained negatives. In the current sample, records contain 1, 2, 3, or 4 documents.
+
+If Argilla was already initialized with an older frozen sample, stop it and remove the old local volumes before running setup for this revised sample. This discards only the old local annotations and must not be done after the final audit has started.
 
 ### Calculating the audit metrics
 

@@ -9,43 +9,49 @@
     "train": 40,
     "synthetic_test": 24
   },
-  "dataset_hash": "19ccc1af694c888203d65dadf5b95335af25ed1fee13f30bd11c5e67bf89984c",
+  "selected_negative_count": {
+    "3": 45,
+    "2": 13,
+    "1": 5,
+    "0": 1
+  },
+  "dataset_hash": "75f681e7a94652af6c1532bf56ff2813f78c43485df91a64229242bf6337a564",
   "source": "data_preprocessing/data/output_final_dataset/data",
   "source_files": [
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00000-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00000-of-00008.parquet",
       "size": 1665235916
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00001-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00001-of-00008.parquet",
       "size": 1683323001
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00002-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00002-of-00008.parquet",
       "size": 1717812467
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00003-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00003-of-00008.parquet",
       "size": 1657872098
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00004-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00004-of-00008.parquet",
       "size": 1657115712
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00005-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00005-of-00008.parquet",
       "size": 1683890825
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00006-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00006-of-00008.parquet",
       "size": 1643423905
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\train-00007-of-00008.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\train-00007-of-00008.parquet",
       "size": 1399904985
     },
     {
-      "path": "data_preprocessing\\data\\output_final_dataset\\data\\test-00000-of-00001.parquet",
+      "path": "D:\\HSE\\Course 4\\Diplom\\ru-promptriever\\pythonProject\\data_preprocessing\\data\\output_final_dataset\\data\\test-00000-of-00001.parquet",
       "size": 18696394
     }
   ],

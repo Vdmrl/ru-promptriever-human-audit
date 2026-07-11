@@ -99,7 +99,7 @@ def extract_candidate(record: dict[str, Any], split: str) -> dict[str, Any] | No
         if doc["text"].strip():
             negatives.append(doc)
             negative_types.append(str(value.get("error_type", "unknown")))
-    if len(negatives) < 3:
+    if not negatives:
         negatives = []
         negative_types = []
         for value in mining.get("documents", []) or []:
@@ -109,14 +109,14 @@ def extract_candidate(record: dict[str, Any], split: str) -> dict[str, Any] | No
             if doc["text"].strip():
                 negatives.append(doc)
                 negative_types.append(str(value.get("error_type", "unknown")))
-    negatives = negatives[:3]
-    negative_types = negative_types[:3]
+    negatives = negatives[:4]
+    negative_types = negative_types[:4]
 
     if not query_id or not query or not instruction:
         return None
     if not stage1_positive["text"].strip() or not stage1_negative["text"].strip():
         return None
-    if not final_positive["text"].strip() or len(negatives) != 3:
+    if not final_positive["text"].strip():
         return None
 
     return {
@@ -135,12 +135,10 @@ def extract_candidate(record: dict[str, Any], split: str) -> dict[str, Any] | No
 
 def shuffled_passages(candidate: dict[str, Any], seed: int) -> tuple[list[dict[str, str]], list[str]]:
     passages = [candidate["final_positive"], *candidate["negatives"]]
-    roles = ["positive", "negative", "negative", "negative"]
+    roles = ["positive", *(["negative"] * len(candidate["negatives"]))]
     digest = hashlib.sha256(f"{seed}:{candidate['item_id']}".encode()).digest()
-    order = list(range(4))
-    for index in range(3, 0, -1):
-        swap = digest[index] % (index + 1)
-        order[index], order[swap] = order[swap], order[index]
+    order = list(range(len(passages)))
+    random.Random(int.from_bytes(digest, "big")).shuffle(order)
     return [passages[index] for index in order], [roles[index] for index in order]
 
 
@@ -190,7 +188,7 @@ def main() -> int:
         raise SystemExit(
             f"Frozen sample is incomplete: train={len(train)}/{args.train_n}, "
             f"synthetic_test={len(test)}/{args.test_n}. "
-            "Check that every record has both Stage-1 passages and exactly three final negatives."
+            "Check that every record has both Stage-1 passages and a valid final positive passage."
         )
 
     selected = train + test

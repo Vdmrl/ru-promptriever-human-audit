@@ -18,6 +18,7 @@ API_URL = os.getenv("ARGILLA_API_URL", "http://localhost:6900")
 API_KEY = os.getenv("ARGILLA_API_KEY", "argilla.apikey")
 WORKSPACE = os.getenv("ARGILLA_WORKSPACE", "default")
 DATASET_NAME = os.getenv("ARGILLA_DATASET", "ru-promptriever-human-audit")
+MAX_DOCUMENTS = 5
 
 FORBIDDEN_PUBLIC_KEYS = {
     "gold",
@@ -84,8 +85,12 @@ def load_items() -> tuple[list[dict[str, Any]], str]:
             raise ValueError(f"{item['item_id']}: Module A fields are incomplete")
         if not module_b.get("query") or not module_b.get("instruction"):
             raise ValueError(f"{item['item_id']}: Module B query/instruction is incomplete")
-        if len(module_b.get("passages") or []) != 4:
-            raise ValueError(f"{item['item_id']}: exactly four Module B passages are required")
+        document_count = len(module_b.get("passages") or [])
+        if not 1 <= document_count <= MAX_DOCUMENTS:
+            raise ValueError(
+                f"{item['item_id']}: expected between 1 and {MAX_DOCUMENTS} Module B passages, "
+                f"found {document_count}"
+            )
         items.append(item)
 
     if len(items) != 64:
@@ -114,8 +119,8 @@ def argilla_settings(client: rg.Argilla) -> rg.Settings:
         rg.TextField(name="instruction", title="Instruction", required=True, client=client),
     ]
     fields.extend(
-        rg.TextField(name=f"document_{index}", title=f"Документ {index}", required=True, client=client)
-        for index in range(1, 5)
+        rg.TextField(name=f"document_{index}", title=f"Документ {index}", required=False, client=client)
+        for index in range(1, MAX_DOCUMENTS + 1)
     )
     questions = [
         rg.LabelQuestion(
@@ -138,10 +143,10 @@ def argilla_settings(client: rg.Argilla) -> rg.Settings:
             name=f"document_{index}_role",
             title=f"Роль документа {index}",
             labels=role_labels,
-            required=True,
+            required=False,
             client=client,
         )
-        for index in range(1, 5)
+        for index in range(1, MAX_DOCUMENTS + 1)
     )
     guidelines = """
 Это слепой аудит синтетических данных ru-Promptriever.
@@ -158,6 +163,22 @@ def argilla_settings(client: rg.Argilla) -> rg.Settings:
 Не оценивай исходный машинный перевод и не проверяй сохранение смысла относительно исходного текста.
 Не используй шкалу 1–5, вариант «неясно» или свободные комментарии.
 Если ситуация спорная, выбери наиболее обоснованный вариант. Расхождения будут использованы для расчёта IAA.
+"""
+    guidelines = """
+Это слепой аудит синтетических данных ru-Promptriever.
+
+Для каждого record:
+1. Оцени query из итоговой записи: понятен ли он и пригоден ли как поисковый query.
+2. Оцени положительный passage: понятен ли он, связно ли написан и пригоден ли для чтения.
+3. Для каждого непустого документа выбери ровно одну роль:
+   1 — документ не отвечает на query;
+   2 — документ отвечает на query, но нарушает instruction;
+   3 — документ отвечает на query и соблюдает instruction.
+
+В разных записях может быть разное число документов. Пустые поля документов отсутствуют в записи;
+для них оставь соответствующий вопрос без ответа. Не пытайся определить, какой документ был исходным
+positive или negative. Не используй шкалу 1–5, вариант «неясно» или свободные комментарии.
+Если ситуация спорная, выбери наиболее обоснованный вариант: расхождения используются для расчёта IAA.
 """
     return rg.Settings(
         guidelines=guidelines,
@@ -228,8 +249,12 @@ def main() -> int:
                 ),
                 "instruction": module_b["instruction"],
             }
-            for index, passage in enumerate(module_b["passages"], 1):
-                fields[f"document_{index}"] = text_with_title(passage)
+            for index in range(1, MAX_DOCUMENTS + 1):
+                fields[f"document_{index}"] = (
+                    text_with_title(module_b["passages"][index - 1])
+                    if index <= len(module_b["passages"])
+                    else ""
+                )
             records.append({"id": item["item_id"], **fields})
         dataset.records.log(records)
         print(f"Created dataset {DATASET_NAME} with {len(records)} records.")
@@ -239,6 +264,13 @@ def main() -> int:
             raise RuntimeError(
                 f"Dataset {DATASET_NAME} already exists with {len(existing)} records, expected {len(items)}. "
                 "Do not replace a frozen dataset after annotation has started."
+            )
+        existing_ids = {str(record.id) for record in existing}
+        expected_ids = {str(item["item_id"]) for item in items}
+        if existing_ids != expected_ids:
+            raise RuntimeError(
+                f"Dataset {DATASET_NAME} contains a different frozen sample. "
+                "Reset the local Docker volumes before initializing the revised sample."
             )
         print(f"Dataset {DATASET_NAME} already exists; records were not duplicated.")
 

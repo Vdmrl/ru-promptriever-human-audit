@@ -15,8 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 BINARY_QUESTIONS = ("query_acceptable", "passage_acceptable")
-ROLE_QUESTIONS = tuple(f"document_{i}_role" for i in range(1, 5))
-ALL_QUESTIONS = BINARY_QUESTIONS + ROLE_QUESTIONS
+MAX_DOCUMENTS = 5
 
 
 def load_manifest(path: Path) -> dict[str, dict[str, Any]]:
@@ -29,8 +28,11 @@ def load_manifest(path: Path) -> dict[str, dict[str, Any]]:
         raise ValueError(f"Manifest is empty: {path}")
     for item_id, row in manifest.items():
         roles = row.get("module_b", {}).get("passage_roles", [])
-        if len(roles) != 4 or roles.count("positive") != 1 or roles.count("negative") != 3:
+        negative_types = row.get("module_b", {}).get("negative_types", [])
+        if not 1 <= len(roles) <= MAX_DOCUMENTS or roles.count("positive") != 1:
             raise ValueError(f"Invalid frozen role metadata for {item_id}: {roles}")
+        if len(negative_types) != roles.count("negative"):
+            raise ValueError(f"Negative type metadata does not match roles for {item_id}")
     return manifest
 
 
@@ -71,11 +73,24 @@ def load_annotations(
     return result
 
 
-def completed(rows: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def completed(
+    rows: dict[str, dict[str, Any]], manifest: dict[str, dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
     return {
         record_id: row
         for record_id, row in rows.items()
-        if row.get("completed") and all(q in row.get("responses", {}) for q in ALL_QUESTIONS)
+        if row.get("completed")
+        and record_id in manifest
+        and all(
+            question in row.get("responses", {})
+            for question in (
+                *BINARY_QUESTIONS,
+                *[
+                    f"document_{index}_role"
+                    for index in range(1, len(manifest[record_id]["module_b"]["passage_roles"]) + 1)
+                ],
+            )
+        )
     }
 
 
@@ -148,7 +163,10 @@ def record_metrics(
         query.append(response["query_acceptable"] == "yes")
         passage.append(response["passage_acceptable"] == "yes")
         expected = expected_roles(manifest[item_id])
-        actual = [response[question] for question in ROLE_QUESTIONS]
+        actual = [
+            response[f"document_{index}_role"]
+            for index in range(1, len(expected) + 1)
+        ]
         role_values.extend(actual)
         positive_index = expected.index("query_and_instruction")
         positive.append(actual[positive_index] == "query_and_instruction")
@@ -157,7 +175,7 @@ def record_metrics(
             for index, role in enumerate(expected)
             if role == "query_only"
         )
-        strict.append(all(actual[index] == expected[index] for index in range(4)))
+        strict.append(all(actual[index] == expected[index] for index in range(len(expected))))
         private_roles = manifest[item_id]["module_b"]["passage_roles"]
         negative_types = manifest[item_id]["module_b"].get("negative_types", [])
         negative_type_index = 0
@@ -251,8 +269,18 @@ def agreement_for_ids(
             [left[item]["responses"][question] for item in ids],
             [right[item]["responses"][question] for item in ids],
         )
-    left_roles = [left[item]["responses"][q] for item in ids for q in ROLE_QUESTIONS]
-    right_roles = [right[item]["responses"][q] for item in ids for q in ROLE_QUESTIONS]
+    left_roles = [
+        left[item]["responses"][f"document_{index}_role"]
+        for item in ids
+        for index in range(1, MAX_DOCUMENTS + 1)
+        if f"document_{index}_role" in left[item]["responses"]
+    ]
+    right_roles = [
+        right[item]["responses"][f"document_{index}_role"]
+        for item in ids
+        for index in range(1, MAX_DOCUMENTS + 1)
+        if f"document_{index}_role" in right[item]["responses"]
+    ]
     return {"binary": binary, "document_roles": agreement(left_roles, right_roles)}
 
 
@@ -287,7 +315,7 @@ def calculate(args: argparse.Namespace) -> dict[str, Any]:
     if len(names) != 2:
         raise ValueError(f"Expected exactly two annotators, found {names}")
 
-    complete = {name: completed(annotations.get(name, {})) for name in names}
+    complete = {name: completed(annotations.get(name, {}), manifest) for name in names}
     result: dict[str, Any] = {
         "sample": {"records": len(manifest), "annotators": names},
         "annotators": {},

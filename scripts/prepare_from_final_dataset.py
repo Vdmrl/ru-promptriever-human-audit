@@ -9,6 +9,7 @@ original or the Stage-1 rewrite.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import random
@@ -41,7 +42,6 @@ def eligible(row: dict[str, Any]) -> bool:
         and row.get("only_query")
         and row.get("only_instruction")
         and row.get("positive_passages")
-        and len(row.get("new_negatives") or []) == 3
     )
 
 
@@ -73,13 +73,11 @@ def passage(value: dict[str, Any]) -> dict[str, str]:
 
 def shuffled_passages(row: dict[str, Any], seed: int) -> tuple[list[dict[str, str]], list[str]]:
     passages = [passage(row["positive_passages"][0])]
-    passages.extend(passage(value) for value in row["new_negatives"])
-    roles = ["positive", "negative", "negative", "negative"]
+    passages.extend(passage(value) for value in row.get("new_negatives") or [])
+    roles = ["positive", *(["negative"] * len(row.get("new_negatives") or []))]
     digest = hashlib.sha256(f"{seed}:{row['query_id']}".encode()).digest()
-    order = list(range(4))
-    for index in range(3, 0, -1):
-        swap = digest[index] % (index + 1)
-        order[index], order[swap] = order[swap], order[index]
+    order = list(range(len(passages)))
+    random.Random(int.from_bytes(digest, "big")).shuffle(order)
     return [passages[index] for index in order], [roles[index] for index in order]
 
 
@@ -110,7 +108,7 @@ def make_item(row: dict[str, Any], split: str, seed: int) -> tuple[dict[str, Any
             "passage_roles": roles,
             "negative_types": [
                 str(value.get("explanation", "unknown"))
-                for value in row["new_negatives"]
+                for value in row.get("new_negatives") or []
             ],
         },
     }
@@ -178,6 +176,12 @@ def main() -> int:
         "seed": args.seed,
         "quality_requested": {"train": args.train_n, "synthetic_test": args.test_n},
         "quality_selected": {"train": args.train_n, "synthetic_test": args.test_n},
+        "selected_negative_count": dict(
+            Counter(
+                len(row.get("new_negatives") or [])
+                for row, _split in selected
+            )
+        ),
         "dataset_hash": dataset_hash,
         "source": "data_preprocessing/data/output_final_dataset/data",
         "source_files": source_metadata,
@@ -194,4 +198,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
