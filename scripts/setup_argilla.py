@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import argilla as rg
+from argilla._exceptions._api import ConflictError
 
 DATA_DIR = Path(os.getenv("ARGILLA_DATA_DIR", "/workspace/data"))
 PUBLIC_PATH = DATA_DIR / "public_items.jsonl"
@@ -178,7 +179,12 @@ def ensure_user(client: rg.Argilla, username: str, password: str, workspace: Any
         )
         user.create()
         user = client.users(username)
-    user.add_to_workspace(workspace)
+    try:
+        user.add_to_workspace(workspace)
+    except ConflictError:
+        # Argilla returns 409 when the user is already a member. This is
+        # expected on every restart because setup is intentionally repeatable.
+        print(f"User {username} is already in workspace {WORKSPACE}; continuing.")
 
 
 def main() -> int:
